@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8">
+    <style>
+      .opt-btn {
+        width: 20%;
+        background-color: transparent;
+        border: 1px solid gray;
+        padding: 5px 10px;
+        margin: 1px;
+        text-align: center;
+        font-size: 14px;
+      }
+    </style>
+  </head>
+
+  <body>
+    <p>Followed stocks: <b id="followed-stocks">None</b></p>
+    <textarea rows="5" id="portfolios"
+      placeholder='[{"name": "Find alternatives to", "symbols": ["GOOGL", "AAPL", "FB", "AMZN", "MSFT"]}]'></textarea>
+    <button id="save" class="opt-btn">Save</button>
+    <button id="reset" class="opt-btn">Generate example data</button>
+    <div id="error" style="color:red"><div>
+    <script src="options.js"></script>
+  </body>
+</html>

@@ -1,0 +1,40 @@
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto",
+    "Oxygen", "Ubuntu", "Helvetica Neue", Arial, sans-serif;
+}
+table {
+  font-family: Courier, monospace;
+  border-collapse: collapse;
+  width: 100%;
+}
+a {
+  text-decoration: none;
+  color: royalblue;
+}
+a:hover { text-decoration: underline; }
+
+.stocks-container {
+  margin-bottom: 1.5em;
+  width: 100%;
+  max-width: 600px;
+}
+
+.stock-symbol {
+  width: 12%;
+  padding: 2px 4px 2px 0px;
+}
+
+.stock-price, .stock-change, .stock-change-pct, .stock-mkt-cap {
+  width: 22%;
+  text-align: right;
+  padding: 2px 4px;
+}
+
+details {
+  margin-bottom: 1em;
+}
+summary:hover { cursor: pointer; }
+
+.attribution, .updated-timestamp {
+  background-color: white;
+}
