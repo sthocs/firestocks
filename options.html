@@ -4,8 +4,10 @@
   <head>
     <meta charset="utf-8">
     <style>
+      .buttons {
+        margin-top: 20px;
+      }
       .opt-btn {
-        width: 20%;
         background-color: transparent;
         border: 1px solid gray;
         padding: 5px 10px;
@@ -13,16 +15,37 @@
         text-align: center;
         font-size: 14px;
       }
+      .opt-btn:hover {
+        background-color: gainsboro;
+      }
+      .opt-btn:active {
+        background-color: lightgrey;
+      }
+      .group {
+        margin-bottom: 12px;
+      }
+      .symbols {
+        margin-top: 2px;
+      }
+      input {
+        margin-left: 2px;
+      }
     </style>
   </head>
 
   <body>
-    <p>Followed stocks: <b id="followed-stocks">None</b></p>
-    <textarea rows="5" id="portfolios"
-      placeholder='[{"name": "Find alternatives to", "symbols": ["GOOGL", "AAPL", "FB", "AMZN", "MSFT"]}]'></textarea>
-    <button id="save" class="opt-btn">Save</button>
-    <button id="reset" class="opt-btn">Generate example data</button>
-    <div id="error" style="color:red"><div>
+    <div id="symbols_editor">
+      <div id="add_group">
+        <button id="add_group_btn">Add group</button>
+        <button id="remove_group_btn">Remove group</button>
+      </div>
+    </div>
+
+    <div class="buttons">
+      <button id="save" class="opt-btn">Save</button>
+      <button id="revert" class="opt-btn">Revert Changes</button>
+      <button id="reset" class="opt-btn">Generate example data</button>
+    </div>
     <script src="options.js"></script>
   </body>
 </html>

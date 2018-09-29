@@ -14,9 +14,11 @@ var PORTFOLIOS = [
 var gettingItem = browser.storage.sync.get('portfolios');
 gettingItem.then((res) => {
   if (res.portfolios) {
-    PORTFOLIOS = JSON.parse(res.portfolios);
+    PORTFOLIOS = res.portfolios;
   }
   init();
+}).catch(err => {
+  containerDiv.innerText = err;
 });
 
 const BATCH_SIZE = 100;
