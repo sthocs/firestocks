@@ -137,7 +137,7 @@ function updateDataForBatch(symbols, addTitle) {
 }
 
 function symbolUrl(symbol) {
-  return `https://iextrading.com/apps/stocks/#/${symbol}`;
+  return `https://iextrading.com/apps/stocks/${symbol}`;
 }
 
 function formatQuote(value) {

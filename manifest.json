@@ -2,7 +2,7 @@
   "description": "Follow all your stocks in Firefox with a single click",
   "manifest_version": 2,
   "name": "Firestocks",
-  "version": "0.1",
+  "version": "0.2",
   "homepage_url": "https://github.com/sthocs/firestocks",
   "icons": {
     "48": "icons/firestocks.svg",
@@ -22,5 +22,5 @@
   "options_ui": {
       "page": "options.html",
       "browser_style": true
-    }
+  }
 }
