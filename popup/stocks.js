@@ -22,7 +22,8 @@ gettingItem.then((res) => {
 });
 
 const BATCH_SIZE = 100;
-const BASE_URL = 'https://api.iextrading.com/1.0/stock/market/batch';
+const BASE_URL = 'https://cloud.iexapis.com/v1/stock/market/batch';
+const TOKEN='';
 
 let symbols = [];
 let containerDiv = document.querySelector('.stocks-container');
@@ -93,7 +94,7 @@ function updateData(addTitle) {
 function updateDataForBatch(symbols, addTitle) {
   let filters = ['latestPrice', 'change', 'changePercent', 'marketCap'];
   if (addTitle) filters.push('companyName');
-  let url = `${BASE_URL}?types=quote&symbols=${symbols.join(',')}&filter=${filters.join(',')}`;
+  let url = `${BASE_URL}?types=quote&symbols=${symbols.join(',')}&filter=${filters.join(',')}&token=${TOKEN}`;
 
   fetch(url).then(response => response.json()).then(json => {
     symbols.forEach(symbol => {
