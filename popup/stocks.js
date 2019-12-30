@@ -152,7 +152,7 @@ function updateDataForBatch(symbols, addTitle) {
 }
 
 function symbolUrl(symbol) {
-  return `https://iextrading.com/apps/stocks/${symbol}`;
+  return `https://finance.yahoo.com/quote/${symbol}`;
 }
 
 function formatQuote(value) {
