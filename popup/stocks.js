@@ -10,12 +10,16 @@ var PORTFOLIOS = [
   {'name': 'Mortgage REITs', 'symbols': ['EFC', 'EARN', 'NLY', 'AGNC', 'CIM', 'TWO', 'NRZ']},
   {'name': 'BigCos', 'symbols': ['XOM', 'WMT', 'JNJ', 'GE', 'T', 'KO', 'DIS', 'MCD', 'PG']}
 ];
+var portfoliosStates = [];
 
-var gettingItem = browser.storage.sync.get('portfolios');
+var gettingItem = browser.storage.sync.get(['portfolios', 'portfoliosStates']);
 gettingItem.then((res) => {
   if (res.portfolios) {
     PORTFOLIOS = res.portfolios;
   }
+  portfoliosStates = res.portfoliosStates ?
+    res.portfoliosStates :
+    Array(PORTFOLIOS.length).fill(true);
   init();
 }).catch(err => {
   containerDiv.innerText = err;
@@ -30,12 +34,12 @@ let containerDiv = document.querySelector('.stocks-container');
 let updatedDiv = document.querySelector('.updated-timestamp');
 
 function init() {
-    PORTFOLIOS.forEach((p, i) => addPortfolio(p, i === 0));
+    PORTFOLIOS.forEach((p, i) => addPortfolio(p, portfoliosStates[i]));
     symbols = symbols.filter((s, i) => symbols.indexOf(s) === i);
     updateData('addTitle');
   }
 
-function addPortfolio(portfolio, includeHeader) {
+function addPortfolio(portfolio, opened) {
   let tableHeaderHtml = '';
   if (true) {
     tableHeaderHtml = `
@@ -69,14 +73,24 @@ function addPortfolio(portfolio, includeHeader) {
   }).join('');
 
   let portfolioDiv = document.createElement('div');
-
-  portfolioDiv.innerHTML = `
-    <details open>
-      <summary>${portfolio.name}</summary>
-      <table>${tableHeaderHtml}<tbody>${tableBodyHtml}</tbody></table>
-    </details>
+  const detailsElt = document.createElement('details');
+  detailsElt.className = 'portfolio-section';
+  if (opened) {
+    detailsElt.setAttribute('open', true);
+  }
+  detailsElt.innerHTML = `
+    <summary>${portfolio.name}</summary>
+    <table>${tableHeaderHtml}<tbody>${tableBodyHtml}</tbody></table>
   `;
-
+  detailsElt.addEventListener('toggle', elt => {
+    const portfoliosStates =
+      Array.from(document.getElementsByClassName('portfolio-section'))
+     .map(details => details.open);
+        browser.storage.sync.set({
+            portfoliosStates
+        });
+  });
+  portfolioDiv.appendChild(detailsElt);
   containerDiv.appendChild(portfolioDiv);
 }
 
