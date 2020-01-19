@@ -34,26 +34,22 @@ let containerDiv = document.querySelector('.stocks-container');
 let updatedDiv = document.querySelector('.updated-timestamp');
 
 function init() {
-    PORTFOLIOS.forEach((p, i) => addPortfolio(p, portfoliosStates[i]));
-    symbols = symbols.filter((s, i) => symbols.indexOf(s) === i);
-    updateData('addTitle');
-  }
+  PORTFOLIOS.forEach((p, i) => addPortfolio(p, portfoliosStates[i]));
+  symbols = symbols.filter((s, i) => symbols.indexOf(s) === i);
+  updateData();
+}
 
 function addPortfolio(portfolio, opened) {
-  let tableHeaderHtml = '';
-  if (true) {
-    tableHeaderHtml = `
-      <thead>
-        <tr>
-          <th></th>
-          <th class="stock-price">Last</th>
-          <th class="stock-change">Change</th>
-          <th class="stock-change-pct">Change%</th>
-          <th class="stock-mkt-cap">Mkt Cap</th>
-        </tr>
-      </thead>
-    `
-  }
+  let tableHeaderHtml = `
+    <thead>
+      <tr>
+        <th></th>
+        <th class="stock-price">Last</th>
+        <th class="stock-change">Change</th>
+        <th class="stock-change-pct">Change%</th>
+        <th class="stock-mkt-cap">Mkt Cap</th>
+      </tr>
+    </thead>`;
 
   let tableBodyHtml = portfolio.symbols.map(symbol => {
     symbol = symbol.toUpperCase();
@@ -86,28 +82,27 @@ function addPortfolio(portfolio, opened) {
     const portfoliosStates =
       Array.from(document.getElementsByClassName('portfolio-section'))
      .map(details => details.open);
-        browser.storage.sync.set({
-            portfoliosStates
-        });
+    browser.storage.sync.set({
+      portfoliosStates
+    });
   });
   portfolioDiv.appendChild(detailsElt);
   containerDiv.appendChild(portfolioDiv);
 }
 
-function updateData(addTitle) {
+function updateData() {
   let numberOfBatches = Math.ceil(symbols.length / BATCH_SIZE);
 
   for (let i = 0; i < numberOfBatches; i++) {
     let symbolsBatch = symbols.slice(i * BATCH_SIZE, (i + 1) * BATCH_SIZE);
-    updateDataForBatch(symbolsBatch, addTitle);
+    updateDataForBatch(symbolsBatch);
   }
 
   updatedDiv.innerHTML = `Data updated: ${(new Date()).toLocaleString()}`;
 }
 
-function updateDataForBatch(symbols, addTitle) {
-  let filters = ['latestPrice', 'change', 'changePercent', 'marketCap'];
-  if (addTitle) filters.push('companyName');
+function updateDataForBatch(symbols) {
+  let filters = ['latestPrice', 'change', 'changePercent', 'marketCap', 'companyName'];
   let url = `${BASE_URL}?types=quote&symbols=${symbols.join(',')}&filter=${filters.join(',')}&token=${TOKEN}`;
 
   fetch(url).then(response => response.json()).then(json => {
@@ -142,11 +137,9 @@ function updateDataForBatch(symbols, addTitle) {
         e.setAttribute('style', `background-color: rgba(${rgbColor}, ${rgbOpacity})`);
       });
 
-      if (addTitle) {
-        document.querySelectorAll(`[data-symbol="${symbol}"] .stock-symbol a`).forEach(e => {
-          e.setAttribute('title', data.quote.companyName);
-        });
-      }
+      document.querySelectorAll(`[data-symbol="${symbol}"] .stock-symbol a`).forEach(e => {
+        e.setAttribute('title', data.quote.companyName);
+      });
     });
   });
 }
