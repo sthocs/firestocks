@@ -2,13 +2,9 @@
 
 var PORTFOLIOS = [
   {'name': 'Market ETFs', 'symbols': ['DIA', 'QQQ', 'IWM']},
-  {'name': 'Sector ETFs', 'symbols': ['XLF', 'XLK', 'XLV', 'XLP', 'XLY', 'XLE', 'XLB', 'XLI', 'XLU', 'XLRE']},
   {'name': 'Banks', 'symbols': ['GS', 'MS', 'JPM', 'WFC', 'C', 'BAC', 'BCS', 'DB', 'CS', 'RBS']},
   {'name': 'Tech', 'symbols': ['AAPL', 'GOOGL', 'MSFT', 'AMZN', 'FB', 'TWTR', 'NFLX', 'SNAP', 'SPOT', 'DBX', 'BABA', 'INTC', 'AMD', 'NVDA', 'ORCL']},
-  {'name': 'Bond ETFs', 'symbols': ['BND', 'BIV', 'JNK']},
-  {'name': 'Other ETFs', 'symbols': ['VOO', 'VTI', 'VGK', 'VPL', 'VWO', 'VDE', 'XOP', 'VFH', 'VHT', 'VIG', 'VYM', 'VAW', 'REM', 'XHB', 'GLD']},
-  {'name': 'Mortgage REITs', 'symbols': ['EFC', 'EARN', 'NLY', 'AGNC', 'CIM', 'TWO', 'NRZ']},
-  {'name': 'BigCos', 'symbols': ['XOM', 'WMT', 'JNJ', 'GE', 'T', 'KO', 'DIS', 'MCD', 'PG']}
+  {'name': 'Forex', 'type': 'forex', base: 'USD', 'symbols': ['GBP', 'EUR']},
 ];
 var portfoliosStates = [];
 
@@ -30,6 +26,7 @@ const BASE_URL = 'https://cloud.iexapis.com/v1/stock/market/batch';
 const TOKEN='';
 
 let symbols = [];
+let forexSymbols = {};
 let containerDiv = document.querySelector('.stocks-container');
 let updatedDiv = document.querySelector('.updated-timestamp');
 
@@ -40,34 +37,6 @@ function init() {
 }
 
 function addPortfolio(portfolio, opened) {
-  let tableHeaderHtml = `
-    <thead>
-      <tr>
-        <th></th>
-        <th class="stock-price">Last</th>
-        <th class="stock-change">Change</th>
-        <th class="stock-change-pct">Change%</th>
-        <th class="stock-mkt-cap">Mkt Cap</th>
-      </tr>
-    </thead>`;
-
-  let tableBodyHtml = portfolio.symbols.map(symbol => {
-    symbol = symbol.toUpperCase();
-    symbols.push(symbol);
-
-    let html = `
-      <tr data-symbol="${symbol}">
-        <td class="stock-symbol"><a href="${symbolUrl(symbol)}" target="_blank">${symbol}</a></td>
-        <td class="stock-price"></td>
-        <td class="stock-change"></td>
-        <td class="stock-change-pct"></td>
-        <td class="stock-mkt-cap"></td>
-      </tr>
-    `
-
-    return html;
-  }).join('');
-
   let portfolioDiv = document.createElement('div');
   const detailsElt = document.createElement('details');
   detailsElt.className = 'portfolio-section';
@@ -76,7 +45,7 @@ function addPortfolio(portfolio, opened) {
   }
   detailsElt.innerHTML = `
     <summary>${portfolio.name}</summary>
-    <table>${tableHeaderHtml}<tbody>${tableBodyHtml}</tbody></table>
+    ${getTableHTML(portfolio)}
   `;
   detailsElt.addEventListener('toggle', elt => {
     const portfoliosStates =
@@ -90,6 +59,62 @@ function addPortfolio(portfolio, opened) {
   containerDiv.appendChild(portfolioDiv);
 }
 
+function getTableHTML(portfolio) {
+  const tableHeaderHtml = portfolio.type !== 'forex' ? `
+    <thead>
+      <tr>
+        <th></th>
+        <th class="stock-price">Last</th>
+        <th class="stock-change">Change</th>
+        <th class="stock-change-pct">Change%</th>
+        <th class="stock-mkt-cap">Mkt Cap</th>
+      </tr>
+    </thead>` : `
+    <thead>
+      <tr>
+        <th></th>
+        <th class="currency-price">Last</th>
+        <th class="currency-change">Change</th>
+        <th class="currency-change-pct">Change%</th>
+      </tr>
+    </thead>`;
+
+  const tableBodyHtml = portfolio.symbols.map(symbol => {
+    symbol = symbol.toUpperCase();
+    if (portfolio.type === 'forex') {
+      if (!forexSymbols[portfolio.base]) {
+        forexSymbols[portfolio.base] = [];
+      }
+      forexSymbols[portfolio.base].push(symbol);
+    } else {
+      symbols.push(symbol);
+    }
+
+
+    if (portfolio.type === 'forex') {
+      return `
+        <tr data-symbol="${portfolio.base}${symbol}">
+          <td class="forex-symbol"><a href="${symbolUrl(symbol, portfolio.base, portfolio.type)}" target="_blank">${portfolio.base}/${symbol}</a></td>
+          <td class="currency-price"></td>
+          <td class="currency-change"></td>
+          <td class="currency-change-pct"></td>
+        </tr>
+      `
+    }
+    return `
+      <tr data-symbol="${symbol}">
+        <td class="stock-symbol"><a href="${symbolUrl(symbol)}" target="_blank">${symbol}</a></td>
+        <td class="stock-price"></td>
+        <td class="stock-change"></td>
+        <td class="stock-change-pct"></td>
+        <td class="stock-mkt-cap"></td>
+      </tr>
+    `
+  }).join('');;
+
+  return `<table>${tableHeaderHtml}<tbody>${tableBodyHtml}</tbody></table>`
+}
+
 function updateData() {
   let numberOfBatches = Math.ceil(symbols.length / BATCH_SIZE);
 
@@ -97,6 +122,8 @@ function updateData() {
     let symbolsBatch = symbols.slice(i * BATCH_SIZE, (i + 1) * BATCH_SIZE);
     updateDataForBatch(symbolsBatch);
   }
+
+  updateForexData(forexSymbols);
 
   updatedDiv.innerHTML = `Data updated: ${(new Date()).toLocaleString()}`;
 }
@@ -144,8 +171,74 @@ function updateDataForBatch(symbols) {
   });
 }
 
-function symbolUrl(symbol) {
-  return `https://finance.yahoo.com/quote/${symbol}`;
+async function updateForexData(symbols) {
+  let { forex } = await browser.storage.sync.get(['forex']);
+  const today = new Date();
+  const yesterday = new Date();
+  today.setDate(today.getDate() - 1);
+  yesterday.setDate(yesterday.getDate() - 2);
+  const todayStr = `${today.getFullYear()}-${today.getMonth() + 1}-${today.getDate()}`;
+  const yesterdayStr = `${yesterday.getFullYear()}-${yesterday.getMonth() + 1}-${yesterday.getDate()}`;
+  let change = 0;
+  let changePct = 0;
+
+
+  forex = forex || {};
+  let todayData = forex[todayStr];
+  let yesterdayData = forex[yesterdayStr];
+  if (!todayData) {
+    forex[todayStr] = {};
+    for (const base of Object.keys(symbols)) {
+      forex[todayStr][base] = await fetchForexData({ date: todayStr, base, symbols: symbols[base] });
+    }
+    todayData = forex[todayStr];
+  }
+  if (!yesterdayData) {
+    forex[yesterdayStr] = {};
+    for (const base of Object.keys(symbols)) {
+      forex[yesterdayStr][base] = await fetchForexData({ date: yesterdayStr, base, symbols: symbols[base] });
+    }
+    yesterdayData = forex[yesterdayStr];
+  }
+  browser.storage.sync.set({ forex });
+
+  Object.keys(todayData).forEach(base => {
+    Object.keys(todayData[base]).forEach(symbol => {
+      const change = todayData[base][symbol] - yesterdayData[base][symbol];
+      const changePct = (change / yesterdayData[base][symbol]) * 100;
+      let rgbColor = changePct > 0 ? '0,255,0' : '255,0,0';
+      let rgbOpacity = Math.abs(changePct);
+      document.querySelectorAll(`[data-symbol="${base}${symbol}"] .currency-price`).forEach(e => {
+        e.innerHTML = `${todayData[base][symbol].toFixed(5)}`;
+        e.setAttribute('style', `background-color: rgba(${rgbColor}, ${rgbOpacity})`);
+      });
+
+      document.querySelectorAll(`[data-symbol="${base}${symbol}"] .currency-change`).forEach(e => {
+        e.innerHTML = change.toFixed(3);
+        e.setAttribute('style', `background-color: rgba(${rgbColor}, ${rgbOpacity})`);
+      });
+
+      document.querySelectorAll(`[data-symbol="${base}${symbol}"] .currency-change-pct`).forEach(e => {
+        e.innerHTML = changePct.toFixed(3);
+        e.setAttribute('style', `background-color: rgba(${rgbColor}, ${rgbOpacity})`);
+      });
+    });
+  });
+}
+
+async function fetchForexData({ date, base, symbols }) {
+  const res = await fetch(`https://api.exchangeratesapi.io/${date}?base=${base}&symbols=${symbols.join(',')}`);
+  const jsonResponse = await res.json();
+  return jsonResponse.rates;
+}
+
+function symbolUrl(symbol, base, type) {
+  switch (type) {
+    case 'forex':
+      return `https://finance.yahoo.com/quote/${base}${symbol}=X`;
+    default:
+      return `https://finance.yahoo.com/quote/${symbol}`;
+  }
 }
 
 function formatQuote(value) {

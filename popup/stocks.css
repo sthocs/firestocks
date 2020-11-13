@@ -29,12 +29,24 @@ a:hover { text-decoration: underline; }
   text-align: right;
   padding: 2px 4px;
 }
+.currency-price, .currency-change, .currency-change-pct {
+  width: 22%;
+  text-align: right;
+  padding: 2px 4px;
+}
 
 details {
   margin-bottom: 1em;
 }
 summary:hover { cursor: pointer; }
 
+p {
+  margin: 2px;
+}
+
 .attribution, .updated-timestamp {
   background-color: white;
+}
+p.exchangeratesapi {
+  margin-top: 8px;
 }
