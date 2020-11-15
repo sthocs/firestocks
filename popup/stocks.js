@@ -4,11 +4,11 @@ var PORTFOLIOS = [
   {'name': 'Market ETFs', 'symbols': ['DIA', 'QQQ', 'IWM']},
   {'name': 'Banks', 'symbols': ['GS', 'MS', 'JPM', 'WFC', 'C', 'BAC', 'BCS', 'DB', 'CS', 'RBS']},
   {'name': 'Tech', 'symbols': ['AAPL', 'GOOGL', 'MSFT', 'AMZN', 'FB', 'TWTR', 'NFLX', 'SNAP', 'SPOT', 'DBX', 'BABA', 'INTC', 'AMD', 'NVDA', 'ORCL']},
-  {'name': 'Forex', 'type': 'forex', base: 'USD', 'symbols': ['GBP', 'EUR']},
+  {'name': 'Forex', 'type': 'forex', 'base': 'USD', 'symbols': ['GBP', 'EUR']},
 ];
 var portfoliosStates = [];
 
-var gettingItem = browser.storage.sync.get(['portfolios', 'portfoliosStates']);
+var gettingItem = browser.storage.sync.get(['portfolios', 'portfoliosStates', 'lastSaveDate']);
 gettingItem.then((res) => {
   if (res.portfolios) {
     PORTFOLIOS = res.portfolios;
@@ -16,7 +16,7 @@ gettingItem.then((res) => {
   portfoliosStates = res.portfoliosStates ?
     res.portfoliosStates :
     Array(PORTFOLIOS.length).fill(true);
-  init();
+  init(res.lastSaveDate);
 }).catch(err => {
   containerDiv.innerText = err;
 });
@@ -30,10 +30,10 @@ let forexSymbols = {};
 let containerDiv = document.querySelector('.stocks-container');
 let updatedDiv = document.querySelector('.updated-timestamp');
 
-function init() {
+function init(lastSaveDate) {
   PORTFOLIOS.forEach((p, i) => addPortfolio(p, portfoliosStates[i]));
   symbols = symbols.filter((s, i) => symbols.indexOf(s) === i);
-  updateData();
+  updateData(lastSaveDate);
 }
 
 function addPortfolio(portfolio, opened) {
@@ -115,7 +115,7 @@ function getTableHTML(portfolio) {
   return `<table>${tableHeaderHtml}<tbody>${tableBodyHtml}</tbody></table>`
 }
 
-function updateData() {
+function updateData(lastSaveDate) {
   let numberOfBatches = Math.ceil(symbols.length / BATCH_SIZE);
 
   for (let i = 0; i < numberOfBatches; i++) {
@@ -123,7 +123,7 @@ function updateData() {
     updateDataForBatch(symbolsBatch);
   }
 
-  updateForexData(forexSymbols);
+  updateForexData(forexSymbols, lastSaveDate);
 
   updatedDiv.innerHTML = `Data updated: ${(new Date()).toLocaleString()}`;
 }
@@ -135,7 +135,7 @@ function updateDataForBatch(symbols) {
   fetch(url).then(response => response.json()).then(json => {
     symbols.forEach(symbol => {
       let data = json[symbol];
-      if (typeof(data) === 'undefined') return;
+      if (!data || !data.quote) return;
 
       let formattedPrice = formatQuote(data.quote.latestPrice);
       let formattedChange = data.quote.change.toLocaleString('en', {'minimumFractionDigits': 2});
@@ -171,34 +171,33 @@ function updateDataForBatch(symbols) {
   });
 }
 
-async function updateForexData(symbols) {
-  let { forex } = await browser.storage.sync.get(['forex']);
+async function updateForexData(symbols, lastPortfolioSaveDate) {
+  let { forex, lastForexDateFetch } = await browser.storage.sync.get(['forex', 'lastForexDateFetch']);
   const today = new Date();
   const yesterday = new Date();
   today.setDate(today.getDate() - 1);
   yesterday.setDate(yesterday.getDate() - 2);
   const todayStr = `${today.getFullYear()}-${today.getMonth() + 1}-${today.getDate()}`;
   const yesterdayStr = `${yesterday.getFullYear()}-${yesterday.getMonth() + 1}-${yesterday.getDate()}`;
-  let change = 0;
-  let changePct = 0;
-
 
   forex = forex || {};
   let todayData = forex[todayStr];
   let yesterdayData = forex[yesterdayStr];
-  if (!todayData) {
+  if (!todayData || !lastForexDateFetch || lastForexDateFetch < lastPortfolioSaveDate) {
     forex[todayStr] = {};
     for (const base of Object.keys(symbols)) {
       forex[todayStr][base] = await fetchForexData({ date: todayStr, base, symbols: symbols[base] });
     }
     todayData = forex[todayStr];
+    browser.storage.sync.set({ lastForexDateFetch: Date.now() });
   }
-  if (!yesterdayData) {
+  if (!yesterdayData || !lastForexDateFetch || lastForexDateFetch < lastPortfolioSaveDate) {
     forex[yesterdayStr] = {};
     for (const base of Object.keys(symbols)) {
       forex[yesterdayStr][base] = await fetchForexData({ date: yesterdayStr, base, symbols: symbols[base] });
     }
     yesterdayData = forex[yesterdayStr];
+    browser.storage.sync.set({ lastForexDateFetch: Date.now() });
   }
   browser.storage.sync.set({ forex });
 
@@ -227,6 +226,9 @@ async function updateForexData(symbols) {
 }
 
 async function fetchForexData({ date, base, symbols }) {
+  if (base === 'EUR') { // Doesn't work for EUR/EUR
+    symbols = symbols.filter(symbol => symbol !== 'EUR');
+  }
   const res = await fetch(`https://api.exchangeratesapi.io/${date}?base=${base}&symbols=${symbols.join(',')}`);
   const jsonResponse = await res.json();
   return jsonResponse.rates;
