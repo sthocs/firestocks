@@ -4,6 +4,11 @@
   <head>
     <meta charset="utf-8">
     <style>
+      input, select, textarea {
+        padding: 4px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+      }
       .buttons {
         margin-top: 20px;
       }
@@ -14,6 +19,7 @@
         margin: 1px;
         text-align: center;
         font-size: 14px;
+        border-radius: 4px;
       }
       .opt-btn:hover {
         background-color: gainsboro;
@@ -32,7 +38,10 @@
       }
       .row {
         display: flex;
-        margin-bottom: 8px;
+        margin-bottom: 4px;
+        vertical-align: middle;
+        height: 32px;
+        line-height: 32px;
       }
       .row > div {
         display: inline-block;
@@ -43,6 +52,7 @@
 
   <body>
     <div id="symbols_editor">
+      <div id="groups"></div>
       <div id="add_group">
         <button id="add_group_btn">Add group</button>
         <button id="remove_group_btn">Remove group</button>

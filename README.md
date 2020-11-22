@@ -6,7 +6,9 @@ about the stocks you follow.
 
 Followed stocks are set in the extension's options page.
 
-Data is refreshed each time you open the popup.
+Stock data is refreshed each time you open the popup. 
+Forex data is only from the day before (real-time APIs are paying).
+Credits to https://exchangeratesapi.io/.
 
 ![Sreenshot](img/screenshot.png)
 

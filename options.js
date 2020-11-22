@@ -1,11 +1,11 @@
-function restoreSymbols() {
-  const portfolios = browser.storage.sync.get('portfolios');
-  portfolios.then((res) => {
-    restorePortfolios(res.portfolios);
-  }).catch(e => {
-    generateExampleData();
-    console.log(e);
-  });
+async function restoreSymbols() {
+  try {
+    const storage = await browser.storage.sync.get('portfolios');
+    restorePortfolios(storage.portfolios);
+  } catch (e) {
+    console.error(e);
+    restorePortfolios();
+  }
 }
 
 document.addEventListener('DOMContentLoaded', restoreSymbols);
@@ -13,11 +13,10 @@ document.querySelector("#save").addEventListener("click", saveSymbols);
 document.querySelector("#reset").addEventListener("click", generateExampleData);
 document.querySelector("#revert").addEventListener("click", restoreSymbols);
 
-const symbols_editor = document.getElementById('symbols_editor');
-const add_group = document.getElementById('add_group');
+const groupsDiv = document.getElementById('groups');
 
 document.querySelector('#add_group_btn').addEventListener('click', function() {
-  symbols_editor.insertBefore(createGroupDiv("", undefined, [], undefined), add_group);
+  groupsDiv.appendChild(createGroupDiv("", undefined, [], undefined));
 });
 document.querySelector('#remove_group_btn').addEventListener('click', function() {
   const groupDivs = document.getElementsByClassName("group");
@@ -42,11 +41,11 @@ function restorePortfolios(portfolios) {
   }
 
   if (!portfolios || portfolios.constructor !== Array) {
-    symbols_editor.insertBefore(createGroupDiv("", undefined, [], undefined), add_group);
+    groupsDiv.appendChild(createGroupDiv("", undefined, [], undefined));
     return;
   }
   for (group of portfolios) {
-    symbols_editor.insertBefore(createGroupDiv(group.name, group.type, group.symbols, group.base), add_group);
+    groupsDiv.appendChild(createGroupDiv(group.name, group.type, group.symbols, group.base));
   }
 }
 
@@ -54,7 +53,6 @@ function saveSymbols() {
   const toSave = [];
   const groupDivs = document.getElementsByClassName("group");
   const groupNames = document.getElementsByClassName("groupName");
-  const symbolsDivs = document.getElementsByClassName("symbols");
   for (let i = 0; i < groupDivs.length; ++i) {
       const typeSelect = groupDivs[i].getElementsByTagName("select");
       const symbolInputs = groupDivs[i].getElementsByClassName("symbolsInput");
@@ -78,6 +76,8 @@ function saveSymbols() {
 }
 
 function createGroupDiv(groupName, type, symbols, base) {
+  const stocksPlaceholder = 'Put symbols names separated by commas, e.g.: AMD, NVDA, NFLX, DVMT, SPOT';
+  const currenciesPlaceholder = 'Put currencies names separated by commas, e.g.: EUR, GBP';
   const newGroupDiv = document.createElement('div');
   newGroupDiv.className = "group";
   newGroupDiv.innerHTML = `
@@ -94,14 +94,25 @@ function createGroupDiv(groupName, type, symbols, base) {
       </div>
     </div>
     <div class="symbols row">
-      Symbols: <input class="symbolsInput" style="flex-grow:1;" value="${symbols.join(", ")}" placeholder="Put symbols names separated by commas, e.g.: AMD, NVDA, NFLX, DVMT, SPOT">
+      Symbols:
+      <input class="symbolsInput" style="flex-grow:1;" value="${symbols.join(", ")}"
+        placeholder="${type === 'forex' ? currenciesPlaceholder : stocksPlaceholder}">
     </div>
   `;
   const baseDiv = newGroupDiv.getElementsByClassName('base')[0];
   const typeSelect = newGroupDiv.getElementsByTagName('select')[0];
-  typeSelect.onchange = function(e) {
-    const display = baseDiv.style.display;
-    baseDiv.style.display = display === 'none' ? 'inline-block' : 'none';
+  const symbolsInput = newGroupDiv.getElementsByClassName('symbolsInput')[0];
+  typeSelect.onchange = function() {
+    switch (typeSelect.value) {
+      case 'stocks':
+        baseDiv.style.display = 'none';
+        symbolsInput.placeholder = stocksPlaceholder;
+        break;
+      case 'forex':
+        baseDiv.style.display = 'inline-block';
+        symbolsInput.placeholder = currenciesPlaceholder;
+        break;
+    }
   }
   return newGroupDiv;
 }
