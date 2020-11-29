@@ -50,3 +50,16 @@ p {
 p.exchangeratesapi {
   margin-top: 8px;
 }
+
+footer {
+  position: relative;
+  font-size: 0.8em;
+}
+footer div {
+  display: flex;
+  align-items: center;
+  position: absolute;
+  top: 0;
+  right: 0;
+  height: 100%;
+}

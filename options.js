@@ -26,7 +26,7 @@ document.querySelector('#remove_group_btn').addEventListener('click', function()
 function generateExampleData() {
   const exampleData = [
     {'name': 'Market ETFs', 'symbols': ['SPY', 'DIA', 'QQQ', 'IWM']},
-    {'name': 'Tech', 'symbols': ['AMD', 'NVDA', 'NFLX', 'DVMT', 'SPOT']},
+    {'name': 'Tech', 'symbols': ['AMD', 'NVDA', 'NFLX', 'SPOT']},
     {'name': 'Banks', 'symbols': ['GS', 'DB', 'CS', 'RBS']},
     {'name': 'Forex', 'type': 'forex', 'base': 'USD', 'symbols': ['EUR', 'GBP']}
   ];
@@ -76,7 +76,7 @@ function saveSymbols() {
 }
 
 function createGroupDiv(groupName, type, symbols, base) {
-  const stocksPlaceholder = 'Put symbols names separated by commas, e.g.: AMD, NVDA, NFLX, DVMT, SPOT';
+  const stocksPlaceholder = 'Put symbols names separated by commas, e.g.: AMD, NVDA, NFLX, SPOT';
   const currenciesPlaceholder = 'Put currencies names separated by commas, e.g.: EUR, GBP';
   const newGroupDiv = document.createElement('div');
   newGroupDiv.className = "group";

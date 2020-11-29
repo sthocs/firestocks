@@ -269,3 +269,7 @@ function formatMarketCap(marketCap) {
 
   return '$' + value.toFixed(digits) + suffix;
 }
+
+document.getElementById('settingsBtn').addEventListener('click', function() {
+  browser.runtime.openOptionsPage();
+});
