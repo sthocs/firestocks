@@ -202,6 +202,7 @@ async function updateForexData(symbols, lastPortfolioSaveDate) {
   browser.storage.sync.set({ forex });
 
   Object.keys(todayData).forEach(base => {
+    if (!todayData[base]) return;
     Object.keys(todayData[base]).forEach(symbol => {
       const change = todayData[base][symbol] - yesterdayData[base][symbol];
       const changePct = (change / yesterdayData[base][symbol]) * 100;
@@ -226,8 +227,10 @@ async function updateForexData(symbols, lastPortfolioSaveDate) {
 }
 
 async function fetchForexData({ date, base, symbols }) {
+  if (!base) return;
+  base = base.toUpperCase();
   if (base === 'EUR') { // Doesn't work for EUR/EUR
-    symbols = symbols.filter(symbol => symbol !== 'EUR');
+    symbols = symbols.filter(symbol => symbol && symbol.toUpperCase() !== 'EUR');
   }
   const res = await fetch(`https://api.exchangeratesapi.io/${date}?base=${base}&symbols=${symbols.join(',')}`);
   const jsonResponse = await res.json();
