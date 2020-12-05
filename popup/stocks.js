@@ -172,7 +172,7 @@ function updateDataForBatch(symbols) {
 }
 
 async function updateForexData(symbols, lastPortfolioSaveDate) {
-  let { forex, lastForexDateFetch } = await browser.storage.sync.get(['forex', 'lastForexDateFetch']);
+  let { forex, lastForexDateFetch = Date.now() } = await browser.storage.sync.get(['forex', 'lastForexDateFetch']);
   const today = new Date();
   const yesterday = new Date();
   today.setDate(today.getDate() - 1);
@@ -183,23 +183,27 @@ async function updateForexData(symbols, lastPortfolioSaveDate) {
   forex = forex || {};
   let todayData = forex[todayStr];
   let yesterdayData = forex[yesterdayStr];
-  if (!todayData || !lastForexDateFetch || lastForexDateFetch < lastPortfolioSaveDate) {
-    forex[todayStr] = {};
+  let newDateFetched = false;
+  if (!todayData || lastForexDateFetch < lastPortfolioSaveDate) {
+    todayData = {};
     for (const base of Object.keys(symbols)) {
-      forex[todayStr][base] = await fetchForexData({ date: todayStr, base, symbols: symbols[base] });
+      todayData[base] = await fetchForexData({ date: todayStr, base, symbols: symbols[base] });
     }
-    todayData = forex[todayStr];
-    browser.storage.sync.set({ lastForexDateFetch: Date.now() });
+    newDateFetched = true;
   }
-  if (!yesterdayData || !lastForexDateFetch || lastForexDateFetch < lastPortfolioSaveDate) {
-    forex[yesterdayStr] = {};
+  if (!yesterdayData || lastForexDateFetch < lastPortfolioSaveDate) {
+    yesterdayData = {};
     for (const base of Object.keys(symbols)) {
-      forex[yesterdayStr][base] = await fetchForexData({ date: yesterdayStr, base, symbols: symbols[base] });
+      yesterdayData[base] = await fetchForexData({ date: yesterdayStr, base, symbols: symbols[base] });
     }
-    yesterdayData = forex[yesterdayStr];
-    browser.storage.sync.set({ lastForexDateFetch: Date.now() });
+    newDateFetched = true;
   }
-  browser.storage.sync.set({ forex });
+  if (newDateFetched) {
+    const toSave = {};
+    toSave[todayStr] = todayData;
+    toSave[yesterdayStr] = yesterdayData;
+    browser.storage.sync.set({ forex: toSave, lastForexDateFetch: Date.now() });
+  }
 
   Object.keys(todayData).forEach(base => {
     if (!todayData[base]) return;
