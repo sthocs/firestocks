@@ -236,7 +236,7 @@ async function fetchForexData({ date, base, symbols }) {
   if (base === 'EUR') { // Doesn't work for EUR/EUR
     symbols = symbols.filter(symbol => symbol && symbol.toUpperCase() !== 'EUR');
   }
-  const res = await fetch(`https://api.exchangeratesapi.io/${date}?base=${base}&symbols=${symbols.join(',')}`);
+  const res = await fetch(`https://api.exchangerate.host/${date}?base=${base}&symbols=${symbols.join(',')}`);
   const jsonResponse = await res.json();
   return jsonResponse.rates;
 }
