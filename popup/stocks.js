@@ -1,15 +1,26 @@
 'use strict';
 
-var PORTFOLIOS = [
+let PORTFOLIOS = [
   {'name': 'Market ETFs', 'symbols': ['DIA', 'QQQ', 'IWM']},
   {'name': 'Banks', 'symbols': ['GS', 'MS', 'JPM', 'WFC', 'C', 'BAC', 'BCS', 'DB', 'CS', 'RBS']},
   {'name': 'Tech', 'symbols': ['AAPL', 'GOOGL', 'MSFT', 'AMZN', 'FB', 'TWTR', 'NFLX', 'SNAP', 'SPOT', 'DBX', 'BABA', 'INTC', 'AMD', 'NVDA', 'ORCL']},
   {'name': 'Forex', 'type': 'forex', 'base': 'USD', 'symbols': ['GBP', 'EUR']},
 ];
-var portfoliosStates = [];
+let portfoliosStates = [];
+let color_dec;
+let color_inc;
 
-var gettingItem = browser.storage.sync.get(['portfolios', 'portfoliosStates', 'lastSaveDate']);
+const gettingItem = browser.storage.sync.get([
+  'portfolios',
+  'portfoliosStates',
+  'lastSaveDate',
+  'color_dec',
+  'color_inc'
+]);
 gettingItem.then((res) => {
+  color_dec = res.color_dec ? hex_to_RGB(res.color_dec) : '255,0,0';
+  color_inc = res.color_inc ? hex_to_RGB(res.color_inc) : '0,255,0';
+
   if (res.portfolios) {
     PORTFOLIOS = res.portfolios;
   }
@@ -141,7 +152,7 @@ function updateDataForBatch(symbols) {
       let formattedChange = data.quote.change.toLocaleString('en', {'minimumFractionDigits': 2});
       let formattedChangePercent = (data.quote.changePercent * 100).toFixed(1) + '%';
       let formattedMarketCap = formatMarketCap(data.quote.marketCap);
-      let rgbColor = data.quote.changePercent > 0 ? '0,255,0' : '255,0,0';
+      let rgbColor = data.quote.changePercent > 0 ? color_inc : color_dec;
       let rgbOpacity = Math.min(Math.abs(data.quote.changePercent) * 20, 1);
 
       document.querySelectorAll(`[data-symbol="${symbol}"] .stock-price`).forEach(e => {
@@ -210,7 +221,7 @@ async function updateForexData(symbols, lastPortfolioSaveDate) {
     Object.keys(todayData[base]).forEach(symbol => {
       const change = todayData[base][symbol] - yesterdayData[base][symbol];
       const changePct = (change / yesterdayData[base][symbol]) * 100;
-      let rgbColor = changePct > 0 ? '0,255,0' : '255,0,0';
+      let rgbColor = changePct > 0 ? color_inc : color_dec;
       let rgbOpacity = Math.abs(changePct);
       document.querySelectorAll(`[data-symbol="${base}${symbol}"] .currency-price`).forEach(e => {
         e.innerHTML = `${todayData[base][symbol].toFixed(5)}`;
@@ -275,6 +286,12 @@ function formatMarketCap(marketCap) {
   let digits = value < 10 ? 1 : 0;
 
   return '$' + value.toFixed(digits) + suffix;
+}
+
+// https://stackoverflow.com/a/30970691/1326281
+function hex_to_RGB(hex) {
+  var m = hex.match(/^#?([\da-f]{2})([\da-f]{2})([\da-f]{2})$/i);
+  return  `${parseInt(m[1], 16)},${parseInt(m[2], 16)},${parseInt(m[3], 16)}`;
 }
 
 document.getElementById('settingsBtn').addEventListener('click', function() {

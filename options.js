@@ -1,7 +1,8 @@
 async function restoreSymbols() {
   try {
-    const storage = await browser.storage.sync.get('portfolios');
+    const storage = await browser.storage.sync.get(['portfolios', 'color_dec', 'color_inc']);
     restorePortfolios(storage.portfolios);
+    restoreColors(storage.color_dec, storage.color_inc);
   } catch (e) {
     console.error(e);
     restorePortfolios();
@@ -49,6 +50,11 @@ function restorePortfolios(portfolios) {
   }
 }
 
+function restoreColors(color_dec, color_inc) {
+  document.getElementById("color_dec").value = color_dec;
+  document.getElementById("color_inc").value = color_inc;
+}
+
 function saveSymbols() {
   const toSave = [];
   const groupDivs = document.getElementsByClassName("group");
@@ -68,10 +74,17 @@ function saveSymbols() {
       };
       toSave.push(group);
   }
+
+  // Colors
+  const color_dec = document.getElementById("color_dec").value;
+  const color_inc = document.getElementById("color_inc").value;
+
   browser.storage.sync.set({
     portfolios: toSave,
     portfoliosStates: Array(toSave.length).fill(true), // Reset collapsed sections
     lastSaveDate: Date.now(),
+    color_dec,
+    color_inc,
   });
 }
 

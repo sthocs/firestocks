@@ -9,8 +9,13 @@
         border: 1px solid #ccc;
         border-radius: 4px;
       }
+      .section {
+        margin-bottom: 16px;
+      }
       .buttons {
         margin-top: 20px;
+        margin-left: auto;
+        margin-right: 0;
       }
       .group-btn {
         border-radius: 4px;
@@ -48,24 +53,31 @@
       }
       .row > div {
         display: inline-block;
-        padding-right: 8px;
+        padding-right: 16px;
       }
     </style>
   </head>
 
   <body>
-    <div id="symbols_editor">
+    <div class="section">
+      <h1>Symbols</h1>
       <div id="groups"></div>
       <div id="add_group">
         <button id="add_group_btn" class="group-btn">Add group</button>
         <button id="remove_group_btn" class="group-btn">Remove group</button>
+        <button id="reset" class="group-btn">Generate example data</button>
       </div>
     </div>
-
+    <div class="section">
+      <h1>Colors</h1>
+      <div class="row">
+        <div>📈 When increasing: <input id="color_inc" type="color" value="#00ff00"></div>
+        <div>📉​ When decreasing: <input id="color_dec" type="color" value="#ff0000"></div>
+      </div>
+    </div>
     <div class="buttons">
-      <button id="save" class="opt-btn">Save</button>
       <button id="revert" class="opt-btn">Revert Changes</button>
-      <button id="reset" class="opt-btn">Generate example data</button>
+      <button id="save" class="opt-btn">Save</button>
     </div>
     <script src="options.js"></script>
   </body>
