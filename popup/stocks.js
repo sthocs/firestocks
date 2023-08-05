@@ -9,8 +9,10 @@ let PORTFOLIOS = [
 let portfoliosStates = [];
 let color_dec;
 let color_inc;
+let apiKey;
 
 const gettingItem = browser.storage.sync.get([
+  'apiKey',
   'portfolios',
   'portfoliosStates',
   'lastSaveDate',
@@ -18,6 +20,7 @@ const gettingItem = browser.storage.sync.get([
   'color_inc'
 ]);
 gettingItem.then((res) => {
+  apiKey = res.apiKey;
   color_dec = res.color_dec ? hex_to_RGB(res.color_dec) : '255,0,0';
   color_inc = res.color_inc ? hex_to_RGB(res.color_inc) : '0,255,0';
 
@@ -33,8 +36,7 @@ gettingItem.then((res) => {
 });
 
 const BATCH_SIZE = 100;
-const BASE_URL = 'https://cloud.iexapis.com/v1/stock/market/batch';
-const TOKEN='';
+const BASE_URL = 'https://financialmodelingprep.com/api/v3/quote/';
 
 let symbols = [];
 let forexSymbols = {};
@@ -139,46 +141,60 @@ function updateData(lastSaveDate) {
   updatedDiv.innerHTML = `Data updated: ${(new Date()).toLocaleString()}`;
 }
 
-function updateDataForBatch(symbols) {
-  let filters = ['latestPrice', 'change', 'changePercent', 'marketCap', 'companyName'];
-  let url = `${BASE_URL}?types=quote&symbols=${symbols.join(',')}&filter=${filters.join(',')}&token=${TOKEN}`;
+async function updateDataForBatch(symbols) {
+  let url = `${BASE_URL}${symbols.join(',')}?apikey=${apiKey}`;
 
-  fetch(url).then(response => response.json()).then(json => {
-    symbols.forEach(symbol => {
-      let data = json[symbol];
-      if (!data || !data.quote) return;
+  const response = await fetch(url);
+  if (!response.ok) {
+    if (response.status == 401) {
+      document.getElementById('error').innerHTML = 'Invalid API Key.<br />Please create one on <a href="https://site.financialmodelingprep.com/developer">Financial Modeling Prep</a>'
+    } else {
+      document.getElementById('error').innerText = response.statusText;
+    }
+    document.getElementById('error').style.display = 'block';
+    return;
+  } else {
+    document.getElementById('error').style.display = 'none';
+  }
 
-      let formattedPrice = formatQuote(data.quote.latestPrice);
-      let formattedChange = data.quote.change.toLocaleString('en', {'minimumFractionDigits': 2});
-      let formattedChangePercent = (data.quote.changePercent * 100).toFixed(1) + '%';
-      let formattedMarketCap = formatMarketCap(data.quote.marketCap);
-      let rgbColor = data.quote.changePercent > 0 ? color_inc : color_dec;
-      let rgbOpacity = Math.min(Math.abs(data.quote.changePercent) * 20, 1);
+  response.json().then(symbols => {
+    symbols.forEach(data => {
+      console.log(data);
 
-      document.querySelectorAll(`[data-symbol="${symbol}"] .stock-price`).forEach(e => {
+      let formattedPrice = formatQuote(data.price);
+      let formattedChange = data.change;
+      let formattedChangePercent = data.changesPercentage.toLocaleString('en', { maximumFractionDigits: 2 }) + '%';
+      let formattedMarketCap = formatMarketCap(data.marketCap);
+      let rgbColor = data.changesPercentage > 0 ? color_inc : color_dec;
+      let rgbOpacity = Math.min(Math.abs(data.changesPercentage / 100) * 20, 1);
+      console.log(rgbOpacity);
+
+      document.querySelectorAll(`[data-symbol="${data.symbol}"] .stock-price`).forEach(e => {
         e.innerHTML = formattedPrice;
         e.setAttribute('style', `background-color: rgba(${rgbColor}, ${rgbOpacity})`);
       });
 
-      document.querySelectorAll(`[data-symbol="${symbol}"] .stock-change`).forEach(e => {
+      document.querySelectorAll(`[data-symbol="${data.symbol}"] .stock-change`).forEach(e => {
         e.innerHTML = formattedChange;
         e.setAttribute('style', `background-color: rgba(${rgbColor}, ${rgbOpacity})`);
       });
 
-      document.querySelectorAll(`[data-symbol="${symbol}"] .stock-change-pct`).forEach(e => {
+      document.querySelectorAll(`[data-symbol="${data.symbol}"] .stock-change-pct`).forEach(e => {
         e.innerHTML = formattedChangePercent;
         e.setAttribute('style', `background-color: rgba(${rgbColor}, ${rgbOpacity})`);
       });
 
-      document.querySelectorAll(`[data-symbol="${symbol}"] .stock-mkt-cap`).forEach(e => {
+      document.querySelectorAll(`[data-symbol="${data.symbol}"] .stock-mkt-cap`).forEach(e => {
         e.innerHTML = formattedMarketCap;
         e.setAttribute('style', `background-color: rgba(${rgbColor}, ${rgbOpacity})`);
       });
 
-      document.querySelectorAll(`[data-symbol="${symbol}"] .stock-symbol a`).forEach(e => {
-        e.setAttribute('title', data.quote.companyName);
+      document.querySelectorAll(`[data-symbol="${data.symbol}"] .stock-symbol a`).forEach(e => {
+        e.setAttribute('title', data.name);
       });
     });
+  }).catch(e => {
+    console.log(e);
   });
 }
 

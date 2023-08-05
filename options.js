@@ -1,6 +1,7 @@
 async function restoreSymbols() {
   try {
-    const storage = await browser.storage.sync.get(['portfolios', 'color_dec', 'color_inc']);
+    const storage = await browser.storage.sync.get(['apiKey', 'portfolios', 'color_dec', 'color_inc']);
+    document.getElementById("apiKey").value = storage.apiKey || '';
     restorePortfolios(storage.portfolios);
     restoreColors(storage.color_dec, storage.color_inc);
   } catch (e) {
@@ -75,11 +76,15 @@ function saveSymbols() {
       toSave.push(group);
   }
 
+  // API Key
+  const apiKey = document.getElementById("apiKey").value;
+
   // Colors
   const color_dec = document.getElementById("color_dec").value;
   const color_inc = document.getElementById("color_inc").value;
 
   browser.storage.sync.set({
+    apiKey,
     portfolios: toSave,
     portfoliosStates: Array(toSave.length).fill(true), // Reset collapsed sections
     lastSaveDate: Date.now(),

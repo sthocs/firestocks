@@ -13,6 +13,11 @@ a {
 }
 a:hover { text-decoration: underline; }
 
+.error {
+  color: red;
+  padding: 8px;
+}
+
 .stocks-container {
   margin-bottom: 1.5em;
   width: 100%;
