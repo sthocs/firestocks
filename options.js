@@ -18,7 +18,7 @@ document.querySelector("#revert").addEventListener("click", restoreSymbols);
 const groupsDiv = document.getElementById('groups');
 
 document.querySelector('#add_group_btn').addEventListener('click', function() {
-  groupsDiv.appendChild(createGroupDiv("", undefined, [], undefined));
+  groupsDiv.appendChild(createGroupDiv("", []));
 });
 document.querySelector('#remove_group_btn').addEventListener('click', function() {
   const groupDivs = document.getElementsByClassName("group");
@@ -27,10 +27,10 @@ document.querySelector('#remove_group_btn').addEventListener('click', function()
 
 function generateExampleData() {
   const exampleData = [
-    {'name': 'Market ETFs', 'symbols': ['SPY', 'DIA', 'QQQ', 'IWM']},
     {'name': 'Tech', 'symbols': ['AMD', 'NVDA', 'NFLX', 'SPOT']},
-    {'name': 'Banks', 'symbols': ['GS', 'DB', 'CS', 'RBS']},
-    {'name': 'Forex', 'type': 'forex', 'base': 'USD', 'symbols': ['EUR', 'GBP']}
+    {'name': 'Forex', 'symbols': ['USDEUR', 'USDGBP']},
+    {'name': 'Crypto', 'symbols': ['BTCUSD', 'ETHUSD']},
+    {'name': 'Market ETFs', 'symbols': ['SPY', 'DIA', 'QQQ', 'IWM']}
   ];
   restorePortfolios(exampleData);
 }
@@ -43,17 +43,17 @@ function restorePortfolios(portfolios) {
   }
 
   if (!portfolios || portfolios.constructor !== Array) {
-    groupsDiv.appendChild(createGroupDiv("", undefined, [], undefined));
+    groupsDiv.appendChild(createGroupDiv("", []));
     return;
   }
   for (group of portfolios) {
-    groupsDiv.appendChild(createGroupDiv(group.name, group.type, group.symbols, group.base));
+    groupsDiv.appendChild(createGroupDiv(group.name, group.symbols));
   }
 }
 
 function restoreColors(color_dec, color_inc) {
-  document.getElementById("color_dec").value = color_dec;
-  document.getElementById("color_inc").value = color_inc;
+  document.getElementById("color_dec").value = color_dec || "#ff0000";
+  document.getElementById("color_inc").value = color_inc || "#00ff00";
 }
 
 function saveSymbols() {
@@ -61,17 +61,13 @@ function saveSymbols() {
   const groupDivs = document.getElementsByClassName("group");
   const groupNames = document.getElementsByClassName("groupName");
   for (let i = 0; i < groupDivs.length; ++i) {
-      const typeSelect = groupDivs[i].getElementsByTagName("select");
       const symbolInputs = groupDivs[i].getElementsByClassName("symbolsInput");
-      const baseInput = groupDivs[i].getElementsByClassName("baseInput")[0];
       // this will remove spaces https://developer.mozilla.org/fr/docs/Web/JavaScript/Reference/Objets_globaux/String/split#Supprimer_les_espaces_d'une_cha%C3%AEne
       const regex = /\s*,\s*/;
       const symbolNames = symbolInputs[0].value.split(regex);
       const group = {
         name: groupNames[i].value,
-        type: typeSelect[0].value,
         symbols: symbolNames,
-        base: baseInput.value,
       };
       toSave.push(group);
   }
@@ -93,44 +89,19 @@ function saveSymbols() {
   });
 }
 
-function createGroupDiv(groupName, type, symbols, base) {
-  const stocksPlaceholder = 'Put symbols names separated by commas, e.g.: AMD, NVDA, NFLX, SPOT';
-  const currenciesPlaceholder = 'Put currencies names separated by commas, e.g.: EUR, GBP';
+function createGroupDiv(groupName, symbols) {
+  const stocksPlaceholder = 'Put symbols names separated by commas, e.g.: AMD, NVDA, EURUSD, BTCUSD';
   const newGroupDiv = document.createElement('div');
   newGroupDiv.className = "group";
   newGroupDiv.innerHTML = `
     <div class="row">
       <div>Group name:<input class="groupName" value="${groupName}"></div>
-      <div>Type:
-        <select class="type">
-          <option value="stocks">Stocks</option>
-          <option value="forex" ${type === 'forex' ? 'selected="selected"' : ''}>Forex</option>
-        </select>
-      </div>
-      <div class="base" style="display: ${type === 'forex' ? 'inline-block' : 'none'}">Base:
-        <input class="baseInput" size="5" value="${base || 'USD'}">
-      </div>
     </div>
     <div class="symbols row">
       Symbols:
       <input class="symbolsInput" style="flex-grow:1;" value="${symbols.join(", ")}"
-        placeholder="${type === 'forex' ? currenciesPlaceholder : stocksPlaceholder}">
+        placeholder="${stocksPlaceholder}">
     </div>
   `;
-  const baseDiv = newGroupDiv.getElementsByClassName('base')[0];
-  const typeSelect = newGroupDiv.getElementsByTagName('select')[0];
-  const symbolsInput = newGroupDiv.getElementsByClassName('symbolsInput')[0];
-  typeSelect.onchange = function() {
-    switch (typeSelect.value) {
-      case 'stocks':
-        baseDiv.style.display = 'none';
-        symbolsInput.placeholder = stocksPlaceholder;
-        break;
-      case 'forex':
-        baseDiv.style.display = 'inline-block';
-        symbolsInput.placeholder = currenciesPlaceholder;
-        break;
-    }
-  }
   return newGroupDiv;
 }

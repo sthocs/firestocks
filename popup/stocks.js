@@ -1,10 +1,10 @@
 'use strict';
 
 let PORTFOLIOS = [
-  {'name': 'Market ETFs', 'symbols': ['DIA', 'QQQ', 'IWM']},
-  {'name': 'Banks', 'symbols': ['GS', 'MS', 'JPM', 'WFC', 'C', 'BAC', 'BCS', 'DB', 'CS', 'RBS']},
-  {'name': 'Tech', 'symbols': ['AAPL', 'GOOGL', 'MSFT', 'AMZN', 'FB', 'TWTR', 'NFLX', 'SNAP', 'SPOT', 'DBX', 'BABA', 'INTC', 'AMD', 'NVDA', 'ORCL']},
-  {'name': 'Forex', 'type': 'forex', 'base': 'USD', 'symbols': ['GBP', 'EUR']},
+  {'name': 'Tech', 'symbols': ['AMD', 'NVDA', 'MSFT', 'NFLX', 'SPOT']},
+  {'name': 'Forex', 'symbols': ['USDEUR', 'USDGBP']},
+  {'name': 'Crypto', 'symbols': ['BTCUSD', 'ETHUSD']},
+  {'name': 'Market ETFs', 'symbols': ['SPY', 'DIA', 'QQQ', 'IWM']}
 ];
 let portfoliosStates = [];
 let color_dec;
@@ -73,7 +73,7 @@ function addPortfolio(portfolio, opened) {
 }
 
 function getTableHTML(portfolio) {
-  const tableHeaderHtml = portfolio.type !== 'forex' ? `
+  const tableHeaderHtml = `
     <thead>
       <tr>
         <th></th>
@@ -82,41 +82,15 @@ function getTableHTML(portfolio) {
         <th class="stock-change-pct">Change%</th>
         <th class="stock-mkt-cap">Mkt Cap</th>
       </tr>
-    </thead>` : `
-    <thead>
-      <tr>
-        <th></th>
-        <th class="currency-price">Last</th>
-        <th class="currency-change">Change</th>
-        <th class="currency-change-pct">Change%</th>
-      </tr>
     </thead>`;
 
   const tableBodyHtml = portfolio.symbols.map(symbol => {
     symbol = symbol.toUpperCase();
-    if (portfolio.type === 'forex') {
-      if (!forexSymbols[portfolio.base]) {
-        forexSymbols[portfolio.base] = [];
-      }
-      forexSymbols[portfolio.base].push(symbol);
-    } else {
-      symbols.push(symbol);
-    }
+    symbols.push(symbol);
 
-
-    if (portfolio.type === 'forex') {
-      return `
-        <tr data-symbol="${portfolio.base}${symbol}">
-          <td class="forex-symbol"><a href="${symbolUrl(symbol, portfolio.base, portfolio.type)}" target="_blank">${portfolio.base}/${symbol}</a></td>
-          <td class="currency-price"></td>
-          <td class="currency-change"></td>
-          <td class="currency-change-pct"></td>
-        </tr>
-      `
-    }
     return `
       <tr data-symbol="${symbol}">
-        <td class="stock-symbol"><a href="${symbolUrl(symbol)}" target="_blank">${symbol}</a></td>
+        <td class="stock-symbol"></td>
         <td class="stock-price"></td>
         <td class="stock-change"></td>
         <td class="stock-change-pct"></td>
@@ -135,8 +109,6 @@ function updateData(lastSaveDate) {
     let symbolsBatch = symbols.slice(i * BATCH_SIZE, (i + 1) * BATCH_SIZE);
     updateDataForBatch(symbolsBatch);
   }
-
-  updateForexData(forexSymbols, lastSaveDate);
 
   updatedDiv.innerHTML = `Data updated: ${(new Date()).toLocaleString()}`;
 }
@@ -159,15 +131,19 @@ async function updateDataForBatch(symbols) {
 
   response.json().then(symbols => {
     symbols.forEach(data => {
-      console.log(data);
-
+      const exchange = data.exchange;
+      const yahooUrl = generateYahooUrl(data.symbol, exchange);
       let formattedPrice = formatQuote(data.price);
       let formattedChange = data.change;
       let formattedChangePercent = data.changesPercentage.toLocaleString('en', { maximumFractionDigits: 2 }) + '%';
-      let formattedMarketCap = formatMarketCap(data.marketCap);
+      let formattedMarketCap = exchange === 'FOREX' ? 'N/A' : formatMarketCap(data.marketCap);
       let rgbColor = data.changesPercentage > 0 ? color_inc : color_dec;
       let rgbOpacity = Math.min(Math.abs(data.changesPercentage / 100) * 20, 1);
-      console.log(rgbOpacity);
+
+      document.querySelectorAll(`[data-symbol="${data.symbol}"] .stock-symbol`).forEach(e => {
+        e.outerHTML = `<a href="${yahooUrl}" target="_blank">${data.symbol}</a>`;
+        e.setAttribute('style', `background-color: rgba(${rgbColor}, ${rgbOpacity})`);
+      });
 
       document.querySelectorAll(`[data-symbol="${data.symbol}"] .stock-price`).forEach(e => {
         e.innerHTML = formattedPrice;
@@ -198,80 +174,12 @@ async function updateDataForBatch(symbols) {
   });
 }
 
-async function updateForexData(symbols, lastPortfolioSaveDate) {
-  let { forex, lastForexDateFetch = Date.now() } = await browser.storage.sync.get(['forex', 'lastForexDateFetch']);
-  const today = new Date();
-  const yesterday = new Date();
-  today.setDate(today.getDate() - 1);
-  yesterday.setDate(yesterday.getDate() - 2);
-  const todayStr = `${today.getFullYear()}-${today.getMonth() + 1}-${today.getDate()}`;
-  const yesterdayStr = `${yesterday.getFullYear()}-${yesterday.getMonth() + 1}-${yesterday.getDate()}`;
-
-  forex = forex || {};
-  let todayData = forex[todayStr];
-  let yesterdayData = forex[yesterdayStr];
-  let newDateFetched = false;
-  if (!todayData || lastForexDateFetch < lastPortfolioSaveDate) {
-    todayData = {};
-    for (const base of Object.keys(symbols)) {
-      todayData[base] = await fetchForexData({ date: todayStr, base, symbols: symbols[base] });
-    }
-    newDateFetched = true;
-  }
-  if (!yesterdayData || lastForexDateFetch < lastPortfolioSaveDate) {
-    yesterdayData = {};
-    for (const base of Object.keys(symbols)) {
-      yesterdayData[base] = await fetchForexData({ date: yesterdayStr, base, symbols: symbols[base] });
-    }
-    newDateFetched = true;
-  }
-  if (newDateFetched) {
-    const toSave = {};
-    toSave[todayStr] = todayData;
-    toSave[yesterdayStr] = yesterdayData;
-    browser.storage.sync.set({ forex: toSave, lastForexDateFetch: Date.now() });
-  }
-
-  Object.keys(todayData).forEach(base => {
-    if (!todayData[base]) return;
-    Object.keys(todayData[base]).forEach(symbol => {
-      const change = todayData[base][symbol] - yesterdayData[base][symbol];
-      const changePct = (change / yesterdayData[base][symbol]) * 100;
-      let rgbColor = changePct > 0 ? color_inc : color_dec;
-      let rgbOpacity = Math.abs(changePct);
-      document.querySelectorAll(`[data-symbol="${base}${symbol}"] .currency-price`).forEach(e => {
-        e.innerHTML = `${todayData[base][symbol].toFixed(5)}`;
-        e.setAttribute('style', `background-color: rgba(${rgbColor}, ${rgbOpacity})`);
-      });
-
-      document.querySelectorAll(`[data-symbol="${base}${symbol}"] .currency-change`).forEach(e => {
-        e.innerHTML = change.toFixed(3);
-        e.setAttribute('style', `background-color: rgba(${rgbColor}, ${rgbOpacity})`);
-      });
-
-      document.querySelectorAll(`[data-symbol="${base}${symbol}"] .currency-change-pct`).forEach(e => {
-        e.innerHTML = changePct.toFixed(3);
-        e.setAttribute('style', `background-color: rgba(${rgbColor}, ${rgbOpacity})`);
-      });
-    });
-  });
-}
-
-async function fetchForexData({ date, base, symbols }) {
-  if (!base) return;
-  base = base.toUpperCase();
-  if (base === 'EUR') { // Doesn't work for EUR/EUR
-    symbols = symbols.filter(symbol => symbol && symbol.toUpperCase() !== 'EUR');
-  }
-  const res = await fetch(`https://api.exchangerate.host/${date}?base=${base}&symbols=${symbols.join(',')}`);
-  const jsonResponse = await res.json();
-  return jsonResponse.rates;
-}
-
-function symbolUrl(symbol, base, type) {
-  switch (type) {
-    case 'forex':
-      return `https://finance.yahoo.com/quote/${base}${symbol}=X`;
+function generateYahooUrl(symbol, exchange) {
+  switch (exchange) {
+    case 'FOREX':
+      return `https://finance.yahoo.com/quote/${symbol}=X`;
+    case 'CRYPTO':
+      return `https://finance.yahoo.com/quote/${symbol.substring(0, 3)}-${symbol.substring(3)}`;
     default:
       return `https://finance.yahoo.com/quote/${symbol}`;
   }

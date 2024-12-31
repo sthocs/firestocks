@@ -8,8 +8,7 @@ Followed stocks are set in the extension's options page.
 
 Stock data is refreshed each time you open the popup. It requires a [Financial Modeling Prep](https://site.financialmodelingprep.com/) API Key.
 
-Forex data is only from the day before and stored locally until next day.
-Credits to https://exchangerate.host/.
+The API also supports Forex (e.g. `USDEUR`) and Crypto (e.g. `BTCUSD`) data.
 
 ![Sreenshot](img/screenshot.png)
 
