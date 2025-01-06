@@ -83,7 +83,6 @@ function saveSymbols() {
     apiKey,
     portfolios: toSave,
     portfoliosStates: Array(toSave.length).fill(true), // Reset collapsed sections
-    lastSaveDate: Date.now(),
     color_dec,
     color_inc,
   });

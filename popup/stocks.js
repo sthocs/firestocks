@@ -15,7 +15,6 @@ const gettingItem = browser.storage.sync.get([
   'apiKey',
   'portfolios',
   'portfoliosStates',
-  'lastSaveDate',
   'color_dec',
   'color_inc'
 ]);
@@ -30,7 +29,7 @@ gettingItem.then((res) => {
   portfoliosStates = res.portfoliosStates ?
     res.portfoliosStates :
     Array(PORTFOLIOS.length).fill(true);
-  init(res.lastSaveDate);
+  init();
 }).catch(err => {
   containerDiv.innerText = err;
 });
@@ -43,14 +42,14 @@ let forexSymbols = {};
 let containerDiv = document.querySelector('.stocks-container');
 let updatedDiv = document.querySelector('.updated-timestamp');
 
-function init(lastSaveDate) {
+function init() {
   PORTFOLIOS.forEach((p, i) => addPortfolio(p, portfoliosStates[i]));
   symbols = symbols.filter((s, i) => symbols.indexOf(s) === i);
-  updateData(lastSaveDate);
+  updateData();
 }
 
 function addPortfolio(portfolio, opened) {
-  let portfolioDiv = document.createElement('div');
+  const portfolioDiv = document.createElement('div');
   const detailsElt = document.createElement('details');
   detailsElt.className = 'portfolio-section';
   if (opened) {
@@ -102,76 +101,78 @@ function getTableHTML(portfolio) {
   return `<table>${tableHeaderHtml}<tbody>${tableBodyHtml}</tbody></table>`
 }
 
-function updateData(lastSaveDate) {
+async function updateData() {
   let numberOfBatches = Math.ceil(symbols.length / BATCH_SIZE);
 
   for (let i = 0; i < numberOfBatches; i++) {
     let symbolsBatch = symbols.slice(i * BATCH_SIZE, (i + 1) * BATCH_SIZE);
-    updateDataForBatch(symbolsBatch);
+    try {
+      const symbolsData = await fetchSymbolsData(symbolsBatch);
+      updateDataForBatch(symbolsData);
+    } catch (error) {
+      const response = error.response;
+      if (response.status == 401) {
+        document.getElementById('error').innerHTML = 'Invalid API Key.<br />Please create one on <a href="https://site.financialmodelingprep.com/developer">Financial Modeling Prep</a>'
+      } else {
+        document.getElementById('error').innerText = response.statusText;
+      }
+    }
   }
 
   updatedDiv.innerHTML = `Data updated: ${(new Date()).toLocaleString()}`;
 }
 
-async function updateDataForBatch(symbols) {
-  let url = `${BASE_URL}${symbols.join(',')}?apikey=${apiKey}`;
+async function updateDataForBatch(symbolsData) {
+  symbolsData.forEach(data => {
+    const exchange = data.exchange;
+    const yahooUrl = generateYahooUrl(data.symbol, exchange);
+    const formattedPrice = formatQuote(data.price);
+    const formattedChange = data.change;
+    const formattedChangePercent = data.changesPercentage.toLocaleString('en', { maximumFractionDigits: 2 }) + '%';
+    const formattedMarketCap = exchange === 'FOREX' ? 'N/A' : formatMarketCap(data.marketCap);
+    const rgbColor = data.changesPercentage > 0 ? color_inc : color_dec;
+    const rgbOpacity = Math.min(Math.abs(data.changesPercentage / 100) * 20, 1);
 
+    document.querySelectorAll(`[data-symbol="${data.symbol}"] .stock-symbol`).forEach(e => {
+      e.outerHTML = `<a href="${yahooUrl}" target="_blank">${data.symbol}</a>`;
+      e.setAttribute('style', `background-color: rgba(${rgbColor}, ${rgbOpacity})`);
+    });
+
+    document.querySelectorAll(`[data-symbol="${data.symbol}"] .stock-price`).forEach(e => {
+      e.innerHTML = formattedPrice;
+      e.setAttribute('style', `background-color: rgba(${rgbColor}, ${rgbOpacity})`);
+    });
+
+    document.querySelectorAll(`[data-symbol="${data.symbol}"] .stock-change`).forEach(e => {
+      e.innerHTML = formattedChange;
+      e.setAttribute('style', `background-color: rgba(${rgbColor}, ${rgbOpacity})`);
+    });
+
+    document.querySelectorAll(`[data-symbol="${data.symbol}"] .stock-change-pct`).forEach(e => {
+      e.innerHTML = formattedChangePercent;
+      e.setAttribute('style', `background-color: rgba(${rgbColor}, ${rgbOpacity})`);
+    });
+
+    document.querySelectorAll(`[data-symbol="${data.symbol}"] .stock-mkt-cap`).forEach(e => {
+      e.innerHTML = formattedMarketCap;
+      e.setAttribute('style', `background-color: rgba(${rgbColor}, ${rgbOpacity})`);
+    });
+
+    document.querySelectorAll(`[data-symbol="${data.symbol}"] .stock-symbol a`).forEach(e => {
+      e.setAttribute('title', data.name);
+    });
+  });
+}
+
+async function fetchSymbolsData(symbols) {
+  const url = `${BASE_URL}${symbols.join(',')}?apikey=${apiKey}`;
   const response = await fetch(url);
   if (!response.ok) {
-    if (response.status == 401) {
-      document.getElementById('error').innerHTML = 'Invalid API Key.<br />Please create one on <a href="https://site.financialmodelingprep.com/developer">Financial Modeling Prep</a>'
-    } else {
-      document.getElementById('error').innerText = response.statusText;
-    }
-    document.getElementById('error').style.display = 'block';
-    return;
-  } else {
-    document.getElementById('error').style.display = 'none';
+    const err = new Error();
+    err.response = response;
+    throw err;
   }
-
-  response.json().then(symbols => {
-    symbols.forEach(data => {
-      const exchange = data.exchange;
-      const yahooUrl = generateYahooUrl(data.symbol, exchange);
-      let formattedPrice = formatQuote(data.price);
-      let formattedChange = data.change;
-      let formattedChangePercent = data.changesPercentage.toLocaleString('en', { maximumFractionDigits: 2 }) + '%';
-      let formattedMarketCap = exchange === 'FOREX' ? 'N/A' : formatMarketCap(data.marketCap);
-      let rgbColor = data.changesPercentage > 0 ? color_inc : color_dec;
-      let rgbOpacity = Math.min(Math.abs(data.changesPercentage / 100) * 20, 1);
-
-      document.querySelectorAll(`[data-symbol="${data.symbol}"] .stock-symbol`).forEach(e => {
-        e.outerHTML = `<a href="${yahooUrl}" target="_blank">${data.symbol}</a>`;
-        e.setAttribute('style', `background-color: rgba(${rgbColor}, ${rgbOpacity})`);
-      });
-
-      document.querySelectorAll(`[data-symbol="${data.symbol}"] .stock-price`).forEach(e => {
-        e.innerHTML = formattedPrice;
-        e.setAttribute('style', `background-color: rgba(${rgbColor}, ${rgbOpacity})`);
-      });
-
-      document.querySelectorAll(`[data-symbol="${data.symbol}"] .stock-change`).forEach(e => {
-        e.innerHTML = formattedChange;
-        e.setAttribute('style', `background-color: rgba(${rgbColor}, ${rgbOpacity})`);
-      });
-
-      document.querySelectorAll(`[data-symbol="${data.symbol}"] .stock-change-pct`).forEach(e => {
-        e.innerHTML = formattedChangePercent;
-        e.setAttribute('style', `background-color: rgba(${rgbColor}, ${rgbOpacity})`);
-      });
-
-      document.querySelectorAll(`[data-symbol="${data.symbol}"] .stock-mkt-cap`).forEach(e => {
-        e.innerHTML = formattedMarketCap;
-        e.setAttribute('style', `background-color: rgba(${rgbColor}, ${rgbOpacity})`);
-      });
-
-      document.querySelectorAll(`[data-symbol="${data.symbol}"] .stock-symbol a`).forEach(e => {
-        e.setAttribute('title', data.name);
-      });
-    });
-  }).catch(e => {
-    console.log(e);
-  });
+  return await response.json();
 }
 
 function generateYahooUrl(symbol, exchange) {
