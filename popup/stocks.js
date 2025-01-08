@@ -128,7 +128,7 @@ async function updateDataForBatch(symbolsData) {
     const yahooUrl = generateYahooUrl(data.symbol, exchange);
     const formattedPrice = formatQuote(data.price);
     const formattedChange = data.change;
-    const formattedChangePercent = data.changesPercentage.toLocaleString('en', { maximumFractionDigits: 2 }) + '%';
+    const formattedChangePercent = data.changesPercentage?.toLocaleString('en', { maximumFractionDigits: 2 }) || '';
     const formattedMarketCap = exchange === 'FOREX' ? 'N/A' : formatMarketCap(data.marketCap);
     const rgbColor = data.changesPercentage > 0 ? color_inc : color_dec;
     const rgbOpacity = Math.min(Math.abs(data.changesPercentage / 100) * 20, 1);
@@ -149,7 +149,7 @@ async function updateDataForBatch(symbolsData) {
     });
 
     document.querySelectorAll(`[data-symbol="${data.symbol}"] .stock-change-pct`).forEach(e => {
-      e.innerHTML = formattedChangePercent;
+      e.innerHTML = formattedChangePercent + '%';
       e.setAttribute('style', `background-color: rgba(${rgbColor}, ${rgbOpacity})`);
     });
 
