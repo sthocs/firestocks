@@ -96,7 +96,7 @@ function createGroupDiv(groupName, symbols) {
   newGroupDiv.className = 'group';
   newGroupDiv.innerHTML = `
     <div class="row">
-      <div>Group name:<input class="groupName" value="${groupName}"></div>
+      Group name:<input class="groupName" value="${groupName}">
     </div>
     <div class="symbols row">
       Symbols:
