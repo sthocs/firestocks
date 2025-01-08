@@ -1,4 +1,4 @@
-'use strict';
+/* global browser */
 
 let PORTFOLIOS = [
   {'name': 'Tech', 'symbols': ['AMD', 'NVDA', 'MSFT', 'NFLX', 'SPOT']},
@@ -38,7 +38,6 @@ const BATCH_SIZE = 100;
 const BASE_URL = 'https://financialmodelingprep.com/api/v3/quote/';
 
 let symbols = [];
-let forexSymbols = {};
 let containerDiv = document.querySelector('.stocks-container');
 let updatedDiv = document.querySelector('.updated-timestamp');
 
@@ -59,7 +58,7 @@ function addPortfolio(portfolio, opened) {
     <summary>${portfolio.name}</summary>
     ${getTableHTML(portfolio)}
   `;
-  detailsElt.addEventListener('toggle', elt => {
+  detailsElt.addEventListener('toggle', () => {
     const portfoliosStates =
       Array.from(document.getElementsByClassName('portfolio-section'))
      .map(details => details.open);
@@ -112,7 +111,8 @@ async function updateData() {
     } catch (error) {
       const response = error.response;
       if (response.status == 401) {
-        document.getElementById('error').innerHTML = 'Invalid API Key.<br />Please create one on <a href="https://site.financialmodelingprep.com/developer">Financial Modeling Prep</a>'
+        document.getElementById('error').innerHTML = `Invalid API Key.<br />
+Please create one on <a href="https://site.financialmodelingprep.com/developer">Financial Modeling Prep</a>`
       } else {
         document.getElementById('error').innerText = response.statusText;
       }

@@ -1,3 +1,5 @@
+/* global browser */
+
 async function restoreSymbols() {
   try {
     const storage = await browser.storage.sync.get(['apiKey', 'portfolios', 'color_dec', 'color_inc']);
@@ -46,7 +48,7 @@ function restorePortfolios(portfolios) {
     groupsDiv.appendChild(createGroupDiv("", []));
     return;
   }
-  for (group of portfolios) {
+  for (const group of portfolios) {
     groupsDiv.appendChild(createGroupDiv(group.name, group.symbols));
   }
 }
