@@ -2,14 +2,14 @@
   "description": "Follow all your stocks in Firefox with a single click",
   "manifest_version": 2,
   "name": "Firestocks",
-  "version": "0.7",
+  "version": "0.7.1",
   "homepage_url": "https://github.com/sthocs/firestocks",
   "icons": {
     "48": "icons/firestocks.svg",
     "96": "icons/firestocks.svg"
   },
 
-  "applications": {
+  "browser_specific_settings": {
     "gecko": {
       "id": "{18937a87-736d-4d2f-b716-154408a13777}"
     }
