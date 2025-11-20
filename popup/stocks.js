@@ -28,8 +28,7 @@ gettingItem
     containerDiv.innerText = err;
   });
 
-const BATCH_SIZE = 100;
-const BASE_URL = 'https://financialmodelingprep.com/api/v3/quote/';
+const BASE_URL = 'https://financialmodelingprep.com/stable/quote?symbol=';
 
 let symbols = [];
 let containerDiv = document.querySelector('.stocks-container');
@@ -97,37 +96,41 @@ function getTableHTML(portfolio) {
 }
 
 async function updateData() {
-  let numberOfBatches = Math.ceil(symbols.length / BATCH_SIZE);
-
-  for (let i = 0; i < numberOfBatches; i++) {
-    let symbolsBatch = symbols.slice(i * BATCH_SIZE, (i + 1) * BATCH_SIZE);
+  symbols.map(async symbol => {
     try {
-      const symbolsData = await fetchSymbolsData(symbolsBatch);
-      updateDataForBatch(symbolsData);
+      const symbolsData = await fetchSymbolData(symbol);
+      updateDataForSymbols(symbolsData);
     } catch (error) {
       const response = error.response;
+
       if (response.status == 401) {
         document.getElementById('error').innerHTML = `Invalid API Key.<br />
 Please create one on <a href="https://site.financialmodelingprep.com/developer">Financial Modeling Prep</a>`;
+      } else if (response.status == 402) {
+        document.getElementById('error').innerText += `Symbol ${symbol} is not available for your plan\n`;
       } else {
-        document.getElementById('error').innerText = response.statusText;
+        let body = {};
+        try {
+          body = await response.json();
+        } catch { /* some responses like 402 return invalid JSON */ }
+        document.getElementById('error').innerText += `Error for symbol ${symbol}: [${response.status}] ${body["Error Message"] || response.statusText}\n`;
       }
     }
-  }
+  });
 
   updatedDiv.innerHTML = `Data updated: ${new Date().toLocaleString()}`;
 }
 
-async function updateDataForBatch(symbolsData) {
+async function updateDataForSymbols(symbolsData) {
   symbolsData.forEach((data) => {
     const exchange = data.exchange;
     const yahooUrl = generateYahooUrl(data.symbol, exchange);
-    const formattedPrice = formatQuote(data.price);
+    const formattedPrice = formatQuote(data.price, exchange);
     const formattedChange = data.change;
-    const formattedChangePercent = data.changesPercentage?.toLocaleString('en', { maximumFractionDigits: 2 }) || '';
+    const formattedChangePercent = data.changePercentage?.toLocaleString('en', { maximumFractionDigits: 2 }) || '';
     const formattedMarketCap = exchange === 'FOREX' ? 'N/A' : formatMarketCap(data.marketCap);
-    const rgbColor = data.changesPercentage > 0 ? color_inc : color_dec;
-    const rgbOpacity = Math.min(Math.abs(data.changesPercentage / 100) * 20, 1);
+    const rgbColor = data.changePercentage > 0 ? color_inc : color_dec;
+    const rgbOpacity = Math.min(Math.abs(data.changePercentage / 100) * 20, 1);
 
     document.querySelectorAll(`[data-symbol="${data.symbol}"] .stock-symbol`).forEach((e) => {
       e.outerHTML = `<a href="${yahooUrl}" target="_blank">${data.symbol}</a>`;
@@ -160,8 +163,8 @@ async function updateDataForBatch(symbolsData) {
   });
 }
 
-async function fetchSymbolsData(symbols) {
-  const url = `${BASE_URL}${symbols.join(',')}?apikey=${apiKey}`;
+async function fetchSymbolData(symbol) {
+  const url = `${BASE_URL}${symbol}&apikey=${apiKey}`;
   const response = await fetch(url);
   if (!response.ok) {
     const err = new Error();
@@ -182,9 +185,9 @@ function generateYahooUrl(symbol, exchange) {
   }
 }
 
-function formatQuote(value) {
+function formatQuote(value, exchange) {
   let options = {
-    minimumFractionDigits: 2,
+    minimumFractionDigits: exchange === 'FOREX' ? 3 : 2,
     style: 'currency',
     currency: 'USD',
   };
